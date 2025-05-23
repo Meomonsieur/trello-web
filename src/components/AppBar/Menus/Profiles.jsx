@@ -31,7 +31,7 @@ function Profiles() {
             aria-haspopup="true"
             aria-expanded={open ? 'true' : undefined}
         >
-            <Avatar sx={{width: '24px', height: '24px'}}
+            <Avatar sx={{width: '30px', height: '30px'}}
             alt='Avt'
             src='https://yt3.ggpht.com/yti/ANjgQV9QlgCWugCCyNA6gN_6NyYmavWqxmzm0QKb3URqtlA=s88-c-k-c0x00ffffff-no-rj'
         />
