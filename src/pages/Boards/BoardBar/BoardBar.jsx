@@ -10,6 +10,7 @@ import Avatar from '@mui/material/Avatar'
 import { Tooltip } from '@mui/material';
 import Button from '@mui/material/Button'
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import { capitalizeFirstLetter } from '~/utils/formatters';
 
 const MENU_StYLES = {
   color: 'white',
@@ -27,7 +28,8 @@ const MENU_StYLES = {
   },
 
 }
-function BoardBar() {
+function BoardBar({board}) {
+  
   return (
     <Box sx ={{
         width: '100%',
@@ -40,33 +42,36 @@ function BoardBar() {
         overflowX: 'auto',
         bgcolor: (theme) => (theme.palette.mode === 'dark' ? '#34495e': '#1976d2'),
 
-        borderBottom: '1px solid white',
       }}>
         <Box sx ={{ display: 'flex', alignItems: 'center', gap: 2}}>
           <Chip
           sx ={MENU_StYLES} 
           icon={<DashboardIcon />} 
-          label="Dashboard" variant="outlined" size="small" clickable/>
+          label={board?.title}
+          clickable
+          />
 
           <Chip
           sx ={MENU_StYLES} 
           icon={<VpnLockIcon />} 
-          label="Public/Private Workspace" variant="outlined" size="small" clickable/>
+          label={capitalizeFirstLetter(board?.type)}
+          clickable
+          />
 
           <Chip
           sx ={MENU_StYLES} 
           icon={<AddToDriveIcon />} 
-          label="Add To Google Drive" variant="outlined" size="small" clickable/>
+          label="Add To Google Drive" clickable/>
         
         <Chip
           sx ={MENU_StYLES} 
           icon={<BoltIcon />} 
-          label="Automation" variant="outlined" size="small" clickable/>
+          label="Automation" clickable/>
         
         <Chip
           sx ={MENU_StYLES} 
           icon={<FilterListIcon />} 
-          label="Filters" variant="outlined" size="small" clickable/>
+          label="Filters" clickable/>
         
         
         </Box>
@@ -94,7 +99,10 @@ function BoardBar() {
           width: 34,
           height: 34,
           fontSize: 16,
-          border: 'none'
+          border: 'none',
+          color: 'white',
+          cursor: 'pointer',
+          '&:first-of-type': { bgcolor: '#a4b0be' },
         }
         }}>
           <Tooltip title="quanphan">
