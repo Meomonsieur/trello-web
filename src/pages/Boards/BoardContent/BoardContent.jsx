@@ -10,17 +10,22 @@ import {
   useSensors,
   DragOverlay,
   defaultDropAnimationSideEffects,
-  closestCorners
+  closestCorners,
+  //closestCenter,
+  pointerWithin,
+  //rectIntersection,
+  getFirstCollision
 
 } from '@dnd-kit/core'
 
 import { arrayMove } from '@dnd-kit/sortable'
-import { useState, useEffect } from 'react'
-import { cloneDeep } from 'lodash'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { cloneDeep, isEmpty } from 'lodash'
+import { generatePlaceholderCard } from '~/utils/formatters'
 
 import Column from './ListColumns/Column/Column'
 import Card from './ListColumns/Column/ListCards/Card/Card'
-import { ClassSharp } from '@mui/icons-material'
+
 
 const ACTIVE_DRAG_ITEM_TYPE = {
   COLUMN: 'ACTIVE_DRAG_ITEM_TYPE_COLUMN',
@@ -46,7 +51,8 @@ function BoardContent({board}) {
   const [activeDragItemData, setActiveDragItemData] = useState(null)
   const [oldColumnWhenDraggingCard, setOldColumnWhenDraggingCard] = useState(null)
 
-
+  // Diem va cham cuoi cung(xu ly thuan toan phat hien va cham)
+  const lastOverId = useRef(null)
 
 
 
@@ -83,7 +89,14 @@ function BoardContent({board}) {
 
         if (nextActiveColumn ) {
           
+          //Xoa cac o column active 
           nextActiveColumn.cards = nextActiveColumn.cards.filter(card => card._id !== activeDraggingCartId)
+          
+          // Them Placeholder Card neu Column rong
+          if (isEmpty(nextActiveColumn.cards)){
+            nextActiveColumn.cards = [generatePlaceholderCard(nextActiveColumn)]
+          }
+          
           // Cap nhat lai mang cardOrderIds  cho chuan du lieu
           nextActiveColumn.cardOrderIds = nextActiveColumn.cards.map (card => card._id)
         }
@@ -97,8 +110,12 @@ function BoardContent({board}) {
             columnId: nextOverColumn._id
           }
           // them cai card dang keo vao vi tri moi
-          nextOverColumn.cards.splice(newCardIndex, 0, rebuild_activeDraggingCartData)
+          nextOverColumn.cards = nextOverColumn.cards.toSpliced(newCardIndex, 0, rebuild_activeDraggingCartData)
         }
+
+          //Xoa Placeholder Card di neu no dang ton tai
+          nextOverColumn.cards = nextOverColumn.cards.filter(card => !card.FE_PlaceholderCard)
+
           // Cap nhat lai mang cardOrderIds  cho chuan du lieu
           nextOverColumn.cardOrderIds = nextOverColumn.cards.map (card => card._id)
         
@@ -245,14 +262,69 @@ function BoardContent({board}) {
 
   }
 
+  // args la cac doi so, tham so
+  const collisionDetectionStrategy = useCallback((args) =>{
+    if (activeDragItemType === ACTIVE_DRAG_ITEM_TYPE.COLUMN){
+      return closestCorners({ ...args })
+    }
+
+    // Tim cac diem giao nhau, va cham -intersections voi con tro
+    const pointerIntersections = pointerWithin(args)
+
+    if(!pointerIntersections?.length) return 
+    // Thuat toan phat hien va cham se tra ve mot mang cac va cham o day
+    // const intersections = !!pointerIntersections?.length 
+    //   ? pointerIntersections 
+    //   : rectIntersection (args)
+    
+    // tim overId dau tien trong dam pointerIntersections o tren
+    let overId = getFirstCollision(pointerIntersections, 'id')
+
+    if (overId) {
+      // DUng closestCorners de cai over la column se tim toi cardId gan nhat ben trong khu vuc va cham
+      const checkColumn = orderedColumns.find(column => column._id === overId)
+      if (checkColumn) {
+        //console.log('overId before: ', overId)
+        overId = closestCorners ({ 
+          ...args,
+          droppableContainers: args.droppableContainers.filter(container => {
+            return (container._id !== overId) && (checkColumn.cardOrderIds?.includes(container.id))
+          })
+        })[0]?.id 
+        // console.log('overId after: ', overId)
+      }
+
+      lastOverId.current = overId
+      return [{ id : overId }]
+    }
+
+    // Neu overId la null thi tra ve mang rong - tranh bug crash trang
+    return lastOverId.current ? [{ id: lastOverId.current}] : []
+
+  }, [activeDragItemType, orderedColumns])
+
+
+
+
+
   const customDropAnimation = {
     sideEffects:defaultDropAnimationSideEffects({style: {
       active: { opacity: '0.5' }}})
   }
+
+
+
   return (
   <DndContext 
       sensors={sensors}
-      collisionDetection={closestCorners}
+
+      // collisionDetection={closestCorners}
+
+      //Tu custom nang cao thuat toan phat hien va cham 
+      collisionDetection={collisionDetectionStrategy}
+
+      
+      
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd} 
